@@ -1,12 +1,25 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { Navbar } from "@/components/Layout/Navbar";
+import { Stats } from "@/components/Dashboard/Stats";
+import { AttackMetrics } from "@/components/Dashboard/AttackMetrics";
+import { LeaderBoard } from "@/components/Dashboard/LeaderBoard";
+import { TargetList } from "@/components/Dashboard/TargetList";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen matrix-bg">
+      <Navbar />
+      <main className="container mx-auto py-8">
+        <div className="space-y-8">
+          <Stats />
+          
+          <div className="grid gap-8 md:grid-cols-2">
+            <AttackMetrics />
+            <LeaderBoard />
+          </div>
+          
+          <TargetList />
+        </div>
+      </main>
     </div>
   );
 };
