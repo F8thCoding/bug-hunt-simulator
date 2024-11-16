@@ -1,25 +1,15 @@
+import { Footer } from "@/components/Layout/Footer";
 import { Navbar } from "@/components/Layout/Navbar";
-import { Stats } from "@/components/Dashboard/Stats";
-import { AttackMetrics } from "@/components/Dashboard/AttackMetrics";
-import { LeaderBoard } from "@/components/Dashboard/LeaderBoard";
-import { TargetList } from "@/components/Dashboard/TargetList";
+import { HeroSection } from "@/components/Home/HeroSection";
+import { FeatureSection } from "@/components/Home/FeatureSection";
 
 const Index = () => {
   return (
-    <div className="min-h-screen matrix-bg">
+    <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="container mx-auto py-8">
-        <div className="space-y-8">
-          <Stats />
-          
-          <div className="grid gap-8 md:grid-cols-2">
-            <AttackMetrics />
-            <LeaderBoard />
-          </div>
-          
-          <TargetList />
-        </div>
-      </main>
+      <HeroSection />
+      <FeatureSection />
+      <Footer />
     </div>
   );
 };
