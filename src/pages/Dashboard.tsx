@@ -4,6 +4,8 @@ import { Stats } from "@/components/Dashboard/Stats";
 import { TargetList } from "@/components/Dashboard/TargetList";
 import { AttackMetrics } from "@/components/Dashboard/AttackMetrics";
 import { LeaderBoard } from "@/components/Dashboard/LeaderBoard";
+import { BugReportForm } from "@/components/BugReport/BugReportForm";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Dashboard = () => {
   return (
@@ -18,6 +20,14 @@ const Dashboard = () => {
             <LeaderBoard />
           </div>
           <TargetList />
+          <Card className="bg-muted">
+            <CardHeader>
+              <CardTitle>Report a Bug</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BugReportForm />
+            </CardContent>
+          </Card>
         </div>
       </main>
       <Footer />
