@@ -1,11 +1,63 @@
+import { useEffect, useState } from "react";
 import { Footer } from "@/components/Layout/Footer";
 import { Navbar } from "@/components/Layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { useToast } from "@/components/ui/use-toast";
+
+interface UserData {
+  username: string;
+  email: string;
+  points: number;
+  bugsReported: number;
+}
 
 const Profile = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!user?.uid) return;
+
+      try {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          setUserData(userDoc.data() as UserData);
+        } else {
+          console.log("No user data found!");
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "User data not found"
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load user data"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [user, toast]);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -19,19 +71,19 @@ const Profile = () => {
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium">Username</label>
-                  <p className="text-lg">SecurityPro</p>
+                  <p className="text-lg">{userData?.username || 'N/A'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Email</label>
-                  <p className="text-lg">security@example.com</p>
+                  <p className="text-lg">{userData?.email || user?.email || 'N/A'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Points</label>
-                  <p className="text-lg font-mono text-success">2,100</p>
+                  <p className="text-lg font-mono text-success">{userData?.points || 0}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Bugs Reported</label>
-                  <p className="text-lg font-mono">12</p>
+                  <p className="text-lg font-mono">{userData?.bugsReported || 0}</p>
                 </div>
               </div>
             </CardContent>
