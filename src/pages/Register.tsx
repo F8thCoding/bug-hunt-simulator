@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link, useNavigate, Navigate } from "react-router-dom";
 import { useState } from "react";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { doc, setDoc } from "firebase/firestore";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -43,6 +44,17 @@ const Register = () => {
       await updateProfile(userCredential.user, {
         displayName: username
       });
+
+      // Create initial user document in Firestore
+      await setDoc(doc(db, "users", userCredential.user.uid), {
+        username,
+        email,
+        points: 0,
+        bugsReported: 0,
+        createdAt: new Date().toISOString()
+      });
+      
+      console.log("User document created successfully");
       
       toast({
         title: "Success",
@@ -51,6 +63,7 @@ const Register = () => {
       
       navigate("/dashboard");
     } catch (error: any) {
+      console.error("Registration error:", error);
       toast({
         variant: "destructive",
         title: "Error",

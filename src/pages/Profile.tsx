@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -28,19 +28,32 @@ const Profile = () => {
       if (!user?.uid) return;
 
       try {
-        const userDoc = await getDoc(doc(db, "users", user.uid));
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+        
         if (userDoc.exists()) {
+          console.log("User data found:", userDoc.data());
           setUserData(userDoc.data() as UserData);
         } else {
-          console.log("No user data found!");
+          console.log("No user data found, creating default document");
+          const defaultUserData = {
+            username: user.displayName || 'Anonymous User',
+            email: user.email || '',
+            points: 0,
+            bugsReported: 0,
+            createdAt: new Date().toISOString()
+          };
+          
+          await setDoc(userDocRef, defaultUserData);
+          setUserData(defaultUserData);
+          
           toast({
-            variant: "destructive",
-            title: "Error",
-            description: "User data not found"
+            title: "Profile Created",
+            description: "Your profile has been initialized"
           });
         }
       } catch (error) {
-        console.error("Error fetching user data:", error);
+        console.error("Error fetching/creating user data:", error);
         toast({
           variant: "destructive",
           title: "Error",
