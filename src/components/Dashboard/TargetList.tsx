@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const targets = [
   {
@@ -9,18 +10,21 @@ const targets = [
     difficulty: "Easy",
     bounty: "100-500",
     type: "Web App",
+    path: "/vulnerable-ecommerce"
   },
   {
     name: "Insecure API",
     difficulty: "Medium",
     bounty: "200-1000",
     type: "API",
+    path: "/insecure-api"
   },
   {
     name: "Legacy System",
     difficulty: "Hard",
     bounty: "500-2000",
     type: "Web App",
+    path: "/legacy-system"
   },
 ];
 
@@ -31,6 +35,8 @@ const difficultyColors = {
 };
 
 export const TargetList = () => {
+  const navigate = useNavigate();
+
   return (
     <Card className="bg-muted">
       <CardHeader>
@@ -62,7 +68,11 @@ export const TargetList = () => {
                   <div className="text-sm text-muted-foreground">Bounty Range</div>
                   <div className="font-mono text-success">${target.bounty}</div>
                 </div>
-                <Button size="sm" className="flex items-center space-x-2">
+                <Button 
+                  size="sm" 
+                  className="flex items-center space-x-2"
+                  onClick={() => navigate(target.path)}
+                >
                   <span>Hunt</span>
                   <ExternalLink className="h-4 w-4" />
                 </Button>

@@ -9,6 +9,7 @@ import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import VulnerableApps from "./pages/VulnerableApps";
+import VulnerableEcommerce from "./pages/VulnerableEcommerce";
 import BugReport from "./pages/BugReport";
 import AdminPanel from "./pages/AdminPanel";
 import Leaderboard from "./pages/Leaderboard";
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/vulnerable-apps" element={<VulnerableApps />} />
+            <Route path="/vulnerable-ecommerce" element={<VulnerableEcommerce />} />
             <Route path="/report-bug" element={<BugReport />} />
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
