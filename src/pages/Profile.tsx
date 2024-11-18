@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -17,10 +17,17 @@ interface UserData {
   bugsReported: number;
 }
 
+interface BugReport {
+  title: string;
+  status: string;
+  createdAt: string;
+}
+
 const Profile = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [recentReports, setRecentReports] = useState<BugReport[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,12 +35,30 @@ const Profile = () => {
       if (!user?.uid) return;
 
       try {
+        // Fetch user data
         const userDocRef = doc(db, "users", user.uid);
         const userDoc = await getDoc(userDocRef);
         
         if (userDoc.exists()) {
           console.log("User data found:", userDoc.data());
           setUserData(userDoc.data() as UserData);
+          
+          // Fetch recent bug reports
+          const reportsQuery = query(
+            collection(db, "reports"),
+            where("userId", "==", user.uid),
+            orderBy("createdAt", "desc"),
+            limit(3)
+          );
+          
+          const reportsSnapshot = await getDocs(reportsQuery);
+          const reports = reportsSnapshot.docs.map(doc => ({
+            title: doc.data().title,
+            status: doc.data().status,
+            createdAt: new Date(doc.data().createdAt).toLocaleDateString()
+          }));
+          
+          setRecentReports(reports);
         } else {
           console.log("No user data found, creating default document");
           const defaultUserData = {
@@ -43,17 +68,10 @@ const Profile = () => {
             bugsReported: 0,
             createdAt: new Date().toISOString()
           };
-          
-          await setDoc(userDocRef, defaultUserData);
           setUserData(defaultUserData);
-          
-          toast({
-            title: "Profile Created",
-            description: "Your profile has been initialized"
-          });
         }
       } catch (error) {
-        console.error("Error fetching/creating user data:", error);
+        console.error("Error fetching user data:", error);
         toast({
           variant: "destructive",
           title: "Error",
@@ -127,33 +145,32 @@ const Profile = () => {
 
           <Card className="md:col-span-2 bg-muted">
             <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
+              <CardTitle>Recent Bug Reports</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {[
-                  { action: "Submitted bug report", date: "2 hours ago", status: "Pending" },
-                  { action: "Report approved", date: "1 day ago", status: "Approved" },
-                  { action: "Earned 50 points", date: "1 day ago", status: "Success" },
-                ].map((activity, index) => (
+                {recentReports.map((report, index) => (
                   <div key={index} className="flex items-center justify-between border-b border-border pb-2">
                     <div>
-                      <p className="font-medium">{activity.action}</p>
-                      <p className="text-sm text-muted-foreground">{activity.date}</p>
+                      <p className="font-medium">{report.title}</p>
+                      <p className="text-sm text-muted-foreground">{report.createdAt}</p>
                     </div>
                     <Badge
                       variant={
-                        activity.status === "Approved"
+                        report.status === "approved"
                           ? "success"
-                          : activity.status === "Pending"
+                          : report.status === "pending"
                           ? "default"
                           : "secondary"
                       }
                     >
-                      {activity.status}
+                      {report.status}
                     </Badge>
                   </div>
                 ))}
+                {recentReports.length === 0 && (
+                  <p className="text-muted-foreground">No bug reports submitted yet</p>
+                )}
               </div>
             </CardContent>
           </Card>

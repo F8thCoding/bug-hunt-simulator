@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
-import { doc, updateDoc, increment, collection, addDoc } from "firebase/firestore";
+import { doc, updateDoc, increment, collection, addDoc, query, where, getDocs } from "firebase/firestore";
 import {
   Select,
   SelectContent,
@@ -46,14 +46,14 @@ export const BugReportForm = () => {
         createdAt: new Date().toISOString()
       });
 
+      console.log("Bug report submitted successfully:", reportRef.id);
+
       // Update user's points and bugs reported
       const userRef = doc(db, "users", user.uid);
       await updateDoc(userRef, {
         points: increment(50), // Base points for submission
         bugsReported: increment(1)
       });
-
-      console.log("Bug report submitted successfully:", reportRef.id);
 
       toast({
         title: "Success",
@@ -64,11 +64,7 @@ export const BugReportForm = () => {
       e.currentTarget.reset();
     } catch (error) {
       console.error("Error submitting bug report:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to submit bug report"
-      });
+      throw error; // Let the error propagate to show the actual issue
     } finally {
       setLoading(false);
     }
