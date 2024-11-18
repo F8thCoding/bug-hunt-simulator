@@ -36,8 +36,9 @@ export const BugReportForm = () => {
     
     try {
       console.log("Submitting bug report...");
+      
       // Add bug report to reports collection
-      const reportRef = await addDoc(collection(db, "reports"), {
+      const reportData = {
         userId: user.uid,
         vulnerabilityType: formData.get("vulnerabilityType"),
         title: formData.get("title"),
@@ -46,14 +47,15 @@ export const BugReportForm = () => {
         impact: formData.get("impact"),
         status: "pending",
         createdAt: new Date().toISOString()
-      });
+      };
 
-      console.log("Bug report submitted successfully:", reportRef.id);
+      const reportRef = await addDoc(collection(db, "reports"), reportData);
+      console.log("Bug report stored with ID:", reportRef.id);
 
       // Update user's points and bugs reported
       const userRef = doc(db, "users", user.uid);
       await updateDoc(userRef, {
-        points: increment(50), // Base points for submission
+        points: increment(50),
         bugsReported: increment(1)
       });
 
@@ -62,7 +64,6 @@ export const BugReportForm = () => {
         description: "Bug report submitted successfully! You earned 50 points."
       });
 
-      // Reset form using the ref
       formRef.current?.reset();
     } catch (error) {
       console.error("Error submitting bug report:", error);

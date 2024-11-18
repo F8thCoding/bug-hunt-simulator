@@ -69,14 +69,18 @@ const Profile = () => {
             createdAt: new Date().toISOString()
           };
           setUserData(defaultUserData);
+          setRecentReports([]);
         }
       } catch (error) {
         console.error("Error fetching user data:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load user data"
-        });
+        // Don't show error toast for no reports, only for actual errors
+        if (error instanceof Error && error.message !== "No reports found") {
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to load user data"
+          });
+        }
       } finally {
         setLoading(false);
       }
