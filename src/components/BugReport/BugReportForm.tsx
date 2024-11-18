@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useRef, FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
-import { doc, updateDoc, increment, collection, addDoc, query, where, getDocs } from "firebase/firestore";
+import { doc, updateDoc, increment, collection, addDoc } from "firebase/firestore";
 import {
   Select,
   SelectContent,
@@ -18,8 +18,9 @@ export const BugReportForm = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!user) {
       toast({
@@ -34,6 +35,7 @@ export const BugReportForm = () => {
     const formData = new FormData(e.currentTarget);
     
     try {
+      console.log("Submitting bug report...");
       // Add bug report to reports collection
       const reportRef = await addDoc(collection(db, "reports"), {
         userId: user.uid,
@@ -60,18 +62,22 @@ export const BugReportForm = () => {
         description: "Bug report submitted successfully! You earned 50 points."
       });
 
-      // Reset form
-      e.currentTarget.reset();
+      // Reset form using the ref
+      formRef.current?.reset();
     } catch (error) {
       console.error("Error submitting bug report:", error);
-      throw error; // Let the error propagate to show the actual issue
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to submit bug report"
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
         <label className="text-sm font-medium">Vulnerability Type</label>
         <Select name="vulnerabilityType" required>
