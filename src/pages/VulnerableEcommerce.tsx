@@ -7,21 +7,29 @@ import { useToast } from "@/components/ui/use-toast";
 import { ShoppingCart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-// Simulated SQL database (mock)
+// Mock SQL Database Tables
 const mockDatabase = {
   products: [
-    { id: 1, name: "Laptop", price: 999.99, description: "High-performance <b>laptop</b>", stock: 5 },
-    { id: 2, name: "Phone", price: 599.99, description: "Latest <script>alert('XSS vulnerability')</script> smartphone", stock: 10 },
-    { id: 3, name: "Tablet", price: 299.99, description: "Lightweight tablet", stock: 8 },
-    { id: 4, name: "Smart Watch", price: 199.99, description: "Track your fitness", stock: 15 },
-    { id: 5, name: "Wireless Earbuds", price: 149.99, description: "Noise-cancelling earbuds", stock: 20 },
+    { id: 1, name: "Gaming Laptop", price: 999.99, description: "High-performance gaming laptop", stock: 5, cost: 800 },
+    { id: 2, name: "Smartphone Pro", price: 599.99, description: "Latest smartphone model", stock: 10, cost: 400 },
+    { id: 3, name: "Tablet Air", price: 299.99, description: "Lightweight tablet", stock: 8, cost: 200 },
+    { id: 4, name: "SmartWatch Elite", price: 199.99, description: "Advanced fitness tracking", stock: 15, cost: 100 },
+    { id: 5, name: "Wireless Earbuds", price: 149.99, description: "Noise-cancelling earbuds", stock: 20, cost: 80 },
+    { id: 6, name: "4K Monitor", price: 349.99, description: "Ultra HD display", stock: 12, cost: 250 },
+    { id: 7, name: "Mechanical Keyboard", price: 129.99, description: "RGB gaming keyboard", stock: 25, cost: 70 },
+    { id: 8, name: "Gaming Mouse", price: 79.99, description: "High DPI gaming mouse", stock: 30, cost: 40 }
+  ],
+  users: [
+    { id: 1, username: "admin", password: "admin123!", role: "admin", email: "admin@store.com" },
+    { id: 2, username: "john_doe", password: "password123", role: "user", email: "john@example.com" },
+    { id: 3, username: "jane_smith", password: "userpass456", role: "user", email: "jane@example.com" }
   ],
   orders: [],
-  users: [
-    { id: 1, username: "admin", password: "password123", role: "admin" },
-    { id: 2, username: "user1", password: "userpass", role: "user" },
-  ],
-  revenue: 0,
+  store_info: {
+    total_revenue: 15000.00,
+    total_profit: 5000.00,
+    established_date: "2023-01-01"
+  }
 };
 
 const VulnerableEcommerce = () => {
@@ -30,40 +38,50 @@ const VulnerableEcommerce = () => {
   const [cart, setCart] = useState([]);
   const { toast } = useToast();
 
-  // Simulate a vulnerable SQL query
-  const executeSQLQuery = (query) => {
-    console.log("Executing vulnerable SQL query:", query);
+  // Simulate vulnerable SQL query execution
+  const executeSQLQuery = (query: string) => {
+    console.log("Executing SQL query:", query);
 
+    // Handle SQL injection for products
     if (query.includes("SELECT * FROM products")) {
-      const condition = query.split("WHERE")[1]?.trim();
-      if (condition) {
-        try {
-          const matches = mockDatabase.products.filter((product) => {
-            // Simulate SQL LIKE matching with JavaScript RegExp
-            const regexCondition = condition
-              .replace(/name\s+LIKE\s+'%(.+?)%'/g, (_, term) => `product.name.includes('${term}')`)
-              .replace(/description\s+LIKE\s+'%(.+?)%'/g, (_, term) => `product.description.includes('${term}')`)
-              .replace(/'1'='1'/g, "true"); // Simulate SQL injection '1'='1'
+      if (query.includes("'1'='1'")) {
+        // SQL injection successful - return all products
+        console.log("SQL Injection detected - returning all products");
+        setProducts(mockDatabase.products);
+        return true;
+      }
 
-            return eval(regexCondition); // Evaluate the SQL-like condition
-          });
+      // Handle normal product search
+      const searchTerm = query.toLowerCase();
+      const results = mockDatabase.products.filter(product => 
+        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.description.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      
+      setProducts(results);
+      return results.length > 0;
+    }
 
-          setProducts(matches.length > 0 ? matches : []);
-          return matches.length > 0;
-        } catch (err) {
-          console.error("Error processing SQL query:", err);
-          setProducts([]);
-          return false;
-        }
+    // Handle SQL injection for users table
+    if (query.includes("SELECT * FROM users")) {
+      if (query.includes("'1'='1'")) {
+        console.log("SQL Injection detected - exposing user data:", mockDatabase.users);
+        // In a real app, this would be a security breach exposing user data
+        return mockDatabase.users;
       }
     }
 
-    // Default to showing all products if query is invalid
-    setProducts(mockDatabase.products);
-    return true;
+    // Handle SQL injection for store_info
+    if (query.includes("SELECT * FROM store_info")) {
+      if (query.includes("'1'='1'")) {
+        console.log("SQL Injection detected - exposing store info:", mockDatabase.store_info);
+        return mockDatabase.store_info;
+      }
+    }
+
+    return null;
   };
 
-  // Search functionality (vulnerable to SQL injection)
   const searchProducts = () => {
     const sqlQuery = `SELECT * FROM products WHERE name LIKE '%${searchQuery}%' OR description LIKE '%${searchQuery}%'`;
     const hasResults = executeSQLQuery(sqlQuery);
@@ -71,42 +89,58 @@ const VulnerableEcommerce = () => {
     if (!hasResults) {
       toast({
         title: "No Results Found",
-        description: `No products match "${searchQuery}". Click the button below to show all products.`,
+        description: `No products match "${searchQuery}". Try a different search term.`,
       });
     }
   };
 
-  // Reset to show all products
   const resetSearch = () => {
     setProducts(mockDatabase.products);
     setSearchQuery("");
   };
 
-  // Handle Enter key press in the search bar
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       searchProducts();
     }
   };
 
-  // Add to cart (vulnerable: no stock validation or checks)
   const addToCart = (product) => {
-    setCart([...cart, product]);
-    toast({
-      title: "Added to Cart",
-      description: `${product.name} has been added to your cart`,
-    });
+    // Check if product is in stock (but don't show stock level to user)
+    const productInDb = mockDatabase.products.find(p => p.id === product.id);
+    if (productInDb && productInDb.stock > 0) {
+      setCart([...cart, product]);
+      // Update stock in mock database
+      productInDb.stock -= 1;
+      toast({
+        title: "Added to Cart",
+        description: `${product.name} has been added to your cart`,
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "This item is currently out of stock",
+      });
+    }
   };
 
-  // Checkout functionality (vulnerable: no backend validation)
   const checkout = () => {
     const total = cart.reduce((sum, item) => sum + item.price, 0);
-    mockDatabase.revenue += total; // Update fake revenue
-    mockDatabase.orders.push({ items: cart, total }); // Save fake order
+    
+    // Update store revenue and create order record
+    mockDatabase.store_info.total_revenue += total;
+    mockDatabase.orders.push({
+      id: mockDatabase.orders.length + 1,
+      items: cart,
+      total,
+      date: new Date().toISOString()
+    });
+
     setCart([]);
     toast({
       title: "Purchase Successful",
-      description: `Total: $${total}`,
+      description: `Total: $${total.toFixed(2)}`,
     });
   };
 
@@ -130,7 +164,7 @@ const VulnerableEcommerce = () => {
               placeholder="Search for products..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={handleKeyDown} // Enable Enter key functionality
+              onKeyDown={handleKeyDown}
             />
             <Button onClick={searchProducts}>Search</Button>
             <Button variant="secondary" onClick={resetSearch}>
@@ -144,12 +178,8 @@ const VulnerableEcommerce = () => {
           {products.map((product) => (
             <div key={product.id} className="border rounded-lg p-4 bg-muted">
               <h3 className="text-xl font-semibold mb-2">{product.name}</h3>
-              <p className="text-muted-foreground mb-2">${product.price}</p>
-              {/* Vulnerable to HTML injection */}
-              <p
-                className="text-sm text-muted-foreground mb-4"
-                dangerouslySetInnerHTML={{ __html: product.description }}
-              />
+              <p className="text-muted-foreground mb-2">${product.price.toFixed(2)}</p>
+              <p className="text-sm text-muted-foreground mb-4">{product.description}</p>
               <Button className="w-full" onClick={() => addToCart(product)}>
                 Add to Cart
               </Button>
@@ -165,13 +195,13 @@ const VulnerableEcommerce = () => {
               {cart.map((item, index) => (
                 <div key={index} className="flex justify-between items-center">
                   <span>{item.name}</span>
-                  <span>${item.price}</span>
+                  <span>${item.price.toFixed(2)}</span>
                 </div>
               ))}
               <div className="border-t pt-4 flex justify-between items-center">
                 <span className="font-bold">Total:</span>
                 <span className="font-bold">
-                  ${cart.reduce((sum, item) => sum + item.price, 0)}
+                  ${cart.reduce((sum, item) => sum + item.price, 0).toFixed(2)}
                 </span>
               </div>
               <Button className="w-full" onClick={checkout}>
