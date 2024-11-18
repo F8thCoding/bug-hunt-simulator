@@ -35,6 +35,8 @@ const Profile = () => {
       if (!user?.uid) return;
 
       try {
+        console.log("Fetching user data for:", user.uid);
+        
         // Fetch user data
         const userDocRef = doc(db, "users", user.uid);
         const userDoc = await getDoc(userDocRef);
@@ -52,13 +54,20 @@ const Profile = () => {
           );
           
           const reportsSnapshot = await getDocs(reportsQuery);
-          const reports = reportsSnapshot.docs.map(doc => ({
-            title: doc.data().title,
-            status: doc.data().status,
-            createdAt: new Date(doc.data().createdAt).toLocaleDateString()
-          }));
+          console.log("Found reports:", reportsSnapshot.size);
           
-          setRecentReports(reports);
+          if (!reportsSnapshot.empty) {
+            const reports = reportsSnapshot.docs.map(doc => ({
+              title: doc.data().title,
+              status: doc.data().status,
+              createdAt: new Date(doc.data().createdAt).toLocaleDateString()
+            }));
+            console.log("Processed reports:", reports);
+            setRecentReports(reports);
+          } else {
+            console.log("No reports found for user");
+            setRecentReports([]);
+          }
         } else {
           console.log("No user data found, creating default document");
           const defaultUserData = {
@@ -72,9 +81,9 @@ const Profile = () => {
           setRecentReports([]);
         }
       } catch (error) {
-        console.error("Error fetching user data:", error);
-        // Don't show error toast for no reports, only for actual errors
-        if (error instanceof Error && error.message !== "No reports found") {
+        console.error("Error fetching data:", error);
+        // Only show error toast for actual errors, not for empty results
+        if (error instanceof Error && !error.message.includes("No reports found")) {
           toast({
             variant: "destructive",
             title: "Error",
@@ -153,26 +162,27 @@ const Profile = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentReports.map((report, index) => (
-                  <div key={index} className="flex items-center justify-between border-b border-border pb-2">
-                    <div>
-                      <p className="font-medium">{report.title}</p>
-                      <p className="text-sm text-muted-foreground">{report.createdAt}</p>
+                {recentReports.length > 0 ? (
+                  recentReports.map((report, index) => (
+                    <div key={index} className="flex items-center justify-between border-b border-border pb-2">
+                      <div>
+                        <p className="font-medium">{report.title}</p>
+                        <p className="text-sm text-muted-foreground">{report.createdAt}</p>
+                      </div>
+                      <Badge
+                        variant={
+                          report.status === "approved"
+                            ? "success"
+                            : report.status === "pending"
+                            ? "default"
+                            : "secondary"
+                        }
+                      >
+                        {report.status}
+                      </Badge>
                     </div>
-                    <Badge
-                      variant={
-                        report.status === "approved"
-                          ? "success"
-                          : report.status === "pending"
-                          ? "default"
-                          : "secondary"
-                      }
-                    >
-                      {report.status}
-                    </Badge>
-                  </div>
-                ))}
-                {recentReports.length === 0 && (
+                  ))
+                ) : (
                   <p className="text-muted-foreground">No bug reports submitted yet</p>
                 )}
               </div>
