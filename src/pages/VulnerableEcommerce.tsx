@@ -25,81 +25,73 @@ const mockDatabase = {
     { id: 2, username: "john_doe", password: "password123", role: "user", email: "john@example.com" },
     { id: 3, username: "jane_smith", password: "userpass456", role: "user", email: "jane@example.com" }
   ],
-  orders: [],
   store_info: {
     total_revenue: 15000.00,
     total_profit: 5000.00,
-    established_date: "2023-01-01"
+    established_date: "2023-01-01",
+    bank_account: "1234-5678-9012-3456",
+    admin_notes: "Remember to update prices next week"
   }
 };
 
 const VulnerableEcommerce = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [products, setProducts] = useState(mockDatabase.products);
+  const [searchResults, setSearchResults] = useState(mockDatabase.products);
   const [cart, setCart] = useState([]);
   const { toast } = useToast();
 
-  // Simulate vulnerable SQL query execution with improved injection detection
+  // Vulnerable SQL query execution
   const executeSQLQuery = (query: string) => {
-    console.log("Executing SQL query:", query);
+    console.log("Raw SQL query:", query);
     
-    const sqlInjectionPatterns = [
-      "'='",
-      "' OR '",
-      "' OR 1=1",
-      "OR '1'='1",
-      "%' OR",
-      "-- ",
-      ";--",
-      "1=1"
-    ];
-
-    const hasInjection = sqlInjectionPatterns.some(pattern => 
-      query.toLowerCase().includes(pattern.toLowerCase())
-    );
-
-    if (hasInjection) {
-      console.log("SQL Injection detected!");
-      
-      if (query.toLowerCase().includes("from users")) {
-        console.log("Exposing user data:", mockDatabase.users);
-        return mockDatabase.users;
+    // Handle UNION-based injections
+    if (query.toLowerCase().includes("union")) {
+      if (query.toLowerCase().includes("users")) {
+        setSearchResults(mockDatabase.users);
+        return;
       }
-      
-      if (query.toLowerCase().includes("from store_info")) {
-        console.log("Exposing store info:", mockDatabase.store_info);
-        return mockDatabase.store_info;
+      if (query.toLowerCase().includes("store_info")) {
+        setSearchResults([mockDatabase.store_info]);
+        return;
       }
-      
-      // Default to showing all products for other injection attempts
-      setProducts(mockDatabase.products);
-      return mockDatabase.products;
     }
 
-    // Normal search functionality
+    // Handle OR-based injections
+    if (query.toLowerCase().includes("'='") || query.toLowerCase().includes("or '1'='1")) {
+      if (query.toLowerCase().includes("users")) {
+        setSearchResults(mockDatabase.users);
+        return;
+      }
+      if (query.toLowerCase().includes("store_info")) {
+        setSearchResults([mockDatabase.store_info]);
+        return;
+      }
+      setSearchResults(mockDatabase.products);
+      return;
+    }
+
+    // Normal search
     const results = mockDatabase.products.filter(product => 
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.description.toLowerCase().includes(searchQuery.toLowerCase())
     );
-    
-    setProducts(results);
-    return results;
+    setSearchResults(results);
   };
 
   const searchProducts = () => {
     const sqlQuery = `SELECT * FROM products WHERE name LIKE '%${searchQuery}%' OR description LIKE '%${searchQuery}%'`;
-    const results = executeSQLQuery(sqlQuery);
+    executeSQLQuery(sqlQuery);
 
-    if (results.length === 0) {
+    if (searchResults.length === 0) {
       toast({
         title: "No Results Found",
-        description: `No products match "${searchQuery}". Try a different search term.`,
+        description: `No items match "${searchQuery}". Try a different search term.`,
       });
     }
   };
 
   const resetSearch = () => {
-    setProducts(mockDatabase.products);
+    setSearchResults(mockDatabase.products);
     setSearchQuery("");
   };
 
@@ -130,18 +122,62 @@ const VulnerableEcommerce = () => {
   const checkout = () => {
     const total = cart.reduce((sum, item) => sum + item.price, 0);
     mockDatabase.store_info.total_revenue += total;
-    mockDatabase.orders.push({
-      id: mockDatabase.orders.length + 1,
-      items: cart,
-      total,
-      date: new Date().toISOString()
-    });
-
     setCart([]);
     toast({
       title: "Purchase Successful",
       description: `Total: $${total.toFixed(2)}`,
     });
+  };
+
+  const renderSearchResults = () => {
+    if (!searchResults.length) return <p>No results found</p>;
+
+    // Check if results are users
+    if (searchResults[0]?.username) {
+      return (
+        <div className="grid gap-4">
+          <h2 className="text-xl font-bold text-red-500">⚠️ Exposed User Data ⚠️</h2>
+          {searchResults.map((user: any) => (
+            <div key={user.id} className="border p-4 rounded-lg bg-red-50">
+              <p><strong>Username:</strong> {user.username}</p>
+              <p><strong>Password:</strong> {user.password}</p>
+              <p><strong>Role:</strong> {user.role}</p>
+              <p><strong>Email:</strong> {user.email}</p>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // Check if results are store info
+    if (searchResults[0]?.total_revenue) {
+      const info = searchResults[0];
+      return (
+        <div className="grid gap-4">
+          <h2 className="text-xl font-bold text-red-500">⚠️ Exposed Store Information ⚠️</h2>
+          <div className="border p-4 rounded-lg bg-red-50">
+            <p><strong>Total Revenue:</strong> ${info.total_revenue}</p>
+            <p><strong>Total Profit:</strong> ${info.total_profit}</p>
+            <p><strong>Bank Account:</strong> {info.bank_account}</p>
+            <p><strong>Established Date:</strong> {info.established_date}</p>
+            <p><strong>Admin Notes:</strong> {info.admin_notes}</p>
+          </div>
+        </div>
+      );
+    }
+
+    // Regular product results
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {searchResults.map((product) => (
+          <ProductCard 
+            key={product.id}
+            product={product}
+            onAddToCart={addToCart}
+          />
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -164,15 +200,7 @@ const VulnerableEcommerce = () => {
           handleKeyDown={handleKeyDown}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map((product) => (
-            <ProductCard 
-              key={product.id}
-              product={product}
-              onAddToCart={addToCart}
-            />
-          ))}
-        </div>
+        {renderSearchResults()}
 
         <Cart cart={cart} onCheckout={checkout} />
       </main>
