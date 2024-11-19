@@ -44,33 +44,21 @@ const VulnerableEcommerce = () => {
   const executeSQLQuery = (query: string) => {
     console.log("Raw SQL query:", query);
     
-    // Handle UNION-based injections
-    if (query.toLowerCase().includes("union")) {
-      if (query.toLowerCase().includes("users")) {
-        setSearchResults(mockDatabase.users);
-        return;
-      }
-      if (query.toLowerCase().includes("store_info")) {
-        setSearchResults([mockDatabase.store_info]);
-        return;
-      }
+    // Check for users table injection
+    if (query.toLowerCase().includes("users")) {
+      console.log("Exposing users data");
+      setSearchResults(mockDatabase.users);
+      return;
     }
-
-    // Handle OR-based injections
-    if (query.toLowerCase().includes("'='") || query.toLowerCase().includes("or '1'='1")) {
-      if (query.toLowerCase().includes("users")) {
-        setSearchResults(mockDatabase.users);
-        return;
-      }
-      if (query.toLowerCase().includes("store_info")) {
-        setSearchResults([mockDatabase.store_info]);
-        return;
-      }
-      setSearchResults(mockDatabase.products);
+    
+    // Check for store_info table injection
+    if (query.toLowerCase().includes("store")) {
+      console.log("Exposing store info");
+      setSearchResults([mockDatabase.store_info]);
       return;
     }
 
-    // Normal search
+    // Default to searching products
     const results = mockDatabase.products.filter(product => 
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.description.toLowerCase().includes(searchQuery.toLowerCase())
@@ -79,6 +67,7 @@ const VulnerableEcommerce = () => {
   };
 
   const searchProducts = () => {
+    // Create vulnerable SQL query that allows injection
     const sqlQuery = `SELECT * FROM products WHERE name LIKE '%${searchQuery}%' OR description LIKE '%${searchQuery}%'`;
     executeSQLQuery(sqlQuery);
 
@@ -132,7 +121,7 @@ const VulnerableEcommerce = () => {
   const renderSearchResults = () => {
     if (!searchResults.length) return <p>No results found</p>;
 
-    // Check if results are users
+    // Check if results contain user data
     if (searchResults[0]?.username) {
       return (
         <div className="grid gap-4">
@@ -149,7 +138,7 @@ const VulnerableEcommerce = () => {
       );
     }
 
-    // Check if results are store info
+    // Check if results contain store info
     if (searchResults[0]?.total_revenue) {
       const info = searchResults[0];
       return (
