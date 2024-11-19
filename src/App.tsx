@@ -16,6 +16,7 @@ import AdminPanel from "@/pages/AdminPanel";
 import VulnerableApps from "@/pages/VulnerableApps";
 import VulnerableEcommerce from "@/pages/VulnerableEcommerce";
 import InsecureApi from "@/pages/InsecureApi";
+import LegacySystem from "@/pages/LegacySystem";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ function App() {
               <Route path="/vulnerable-apps" element={<VulnerableApps />} />
               <Route path="/vulnerable-ecommerce" element={<VulnerableEcommerce />} />
               <Route path="/insecure-api" element={<InsecureApi />} />
+              <Route path="/legacy-system" element={<LegacySystem />} />
             </Routes>
           </Router>
           <Toaster />
