@@ -1,47 +1,50 @@
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
-import Index from "./pages/Index";
-import Register from "./pages/Register";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import VulnerableApps from "./pages/VulnerableApps";
-import VulnerableEcommerce from "./pages/VulnerableEcommerce";
-import BugReport from "./pages/BugReport";
-import AdminPanel from "./pages/AdminPanel";
-import Leaderboard from "./pages/Leaderboard";
-import Profile from "./pages/Profile";
-import Notifications from "./pages/Notifications";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { TooltipProvider } from "@/components/ui/tooltip";
+
+import Index from "@/pages/Index";
+import Dashboard from "@/pages/Dashboard";
+import Login from "@/pages/Login";
+import Register from "@/pages/Register";
+import Profile from "@/pages/Profile";
+import BugReport from "@/pages/BugReport";
+import Notifications from "@/pages/Notifications";
+import Leaderboard from "@/pages/Leaderboard";
+import AdminPanel from "@/pages/AdminPanel";
+import VulnerableApps from "@/pages/VulnerableApps";
+import VulnerableEcommerce from "@/pages/VulnerableEcommerce";
+import InsecureApi from "@/pages/InsecureApi";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/vulnerable-apps" element={<VulnerableApps />} />
-            <Route path="/vulnerable-ecommerce" element={<VulnerableEcommerce />} />
-            <Route path="/report-bug" element={<BugReport />} />
-            <Route path="/admin" element={<AdminPanel />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/notifications" element={<Notifications />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Router>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/bug-report" element={<BugReport />} />
+              <Route path="/notifications" element={<Notifications />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/admin" element={<AdminPanel />} />
+              <Route path="/vulnerable-apps" element={<VulnerableApps />} />
+              <Route path="/vulnerable-ecommerce" element={<VulnerableEcommerce />} />
+              <Route path="/insecure-api" element={<InsecureApi />} />
+            </Routes>
+          </Router>
+          <Toaster />
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;
