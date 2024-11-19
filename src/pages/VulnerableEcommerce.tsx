@@ -7,6 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { SearchBar } from "@/components/VulnerableEcommerce/SearchBar";
 import { ProductCard } from "@/components/VulnerableEcommerce/ProductCard";
 import { Cart } from "@/components/VulnerableEcommerce/Cart";
+import { ExposedUserData } from "@/components/VulnerableEcommerce/ExposedUserData";
+import { ExposedStoreInfo } from "@/components/VulnerableEcommerce/ExposedStoreInfo";
+import { Product, User, StoreInfo } from "@/types/ecommerce";
 
 // Mock SQL Database Tables
 const mockDatabase = {
@@ -36,25 +39,30 @@ const mockDatabase = {
 
 const VulnerableEcommerce = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState(mockDatabase.products);
-  const [cart, setCart] = useState([]);
+  const [searchResults, setSearchResults] = useState<Product[]>(mockDatabase.products);
+  const [exposedUsers, setExposedUsers] = useState<User[] | null>(null);
+  const [exposedStoreInfo, setExposedStoreInfo] = useState<StoreInfo | null>(null);
+  const [cart, setCart] = useState<Product[]>([]);
   const { toast } = useToast();
 
-  // Vulnerable SQL query execution
   const executeSQLQuery = (query: string) => {
     console.log("Raw SQL query:", query);
+    
+    // Reset exposed data
+    setExposedUsers(null);
+    setExposedStoreInfo(null);
     
     // Check for users table injection
     if (query.toLowerCase().includes("users")) {
       console.log("Exposing users data");
-      setSearchResults(mockDatabase.users);
+      setExposedUsers(mockDatabase.users);
       return;
     }
     
     // Check for store_info table injection
     if (query.toLowerCase().includes("store")) {
       console.log("Exposing store info");
-      setSearchResults([mockDatabase.store_info]);
+      setExposedStoreInfo(mockDatabase.store_info);
       return;
     }
 
@@ -67,7 +75,6 @@ const VulnerableEcommerce = () => {
   };
 
   const searchProducts = () => {
-    // Create vulnerable SQL query that allows injection
     const sqlQuery = `SELECT * FROM products WHERE name LIKE '%${searchQuery}%' OR description LIKE '%${searchQuery}%'`;
     executeSQLQuery(sqlQuery);
 
@@ -90,7 +97,7 @@ const VulnerableEcommerce = () => {
     }
   };
 
-  const addToCart = (product) => {
+  const addToCart = (product: Product) => {
     const productInDb = mockDatabase.products.find(p => p.id === product.id);
     if (productInDb && productInDb.stock > 0) {
       setCart([...cart, product]);
@@ -119,43 +126,16 @@ const VulnerableEcommerce = () => {
   };
 
   const renderSearchResults = () => {
+    if (exposedUsers) {
+      return <ExposedUserData users={exposedUsers} />;
+    }
+
+    if (exposedStoreInfo) {
+      return <ExposedStoreInfo info={exposedStoreInfo} />;
+    }
+
     if (!searchResults.length) return <p>No results found</p>;
 
-    // Check if results contain user data
-    if (searchResults[0]?.username) {
-      return (
-        <div className="grid gap-4">
-          <h2 className="text-xl font-bold text-red-500">⚠️ Exposed User Data ⚠️</h2>
-          {searchResults.map((user: any) => (
-            <div key={user.id} className="border p-4 rounded-lg bg-red-50">
-              <p><strong>Username:</strong> {user.username}</p>
-              <p><strong>Password:</strong> {user.password}</p>
-              <p><strong>Role:</strong> {user.role}</p>
-              <p><strong>Email:</strong> {user.email}</p>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    // Check if results contain store info
-    if (searchResults[0]?.total_revenue) {
-      const info = searchResults[0];
-      return (
-        <div className="grid gap-4">
-          <h2 className="text-xl font-bold text-red-500">⚠️ Exposed Store Information ⚠️</h2>
-          <div className="border p-4 rounded-lg bg-red-50">
-            <p><strong>Total Revenue:</strong> ${info.total_revenue}</p>
-            <p><strong>Total Profit:</strong> ${info.total_profit}</p>
-            <p><strong>Bank Account:</strong> {info.bank_account}</p>
-            <p><strong>Established Date:</strong> {info.established_date}</p>
-            <p><strong>Admin Notes:</strong> {info.admin_notes}</p>
-          </div>
-        </div>
-      );
-    }
-
-    // Regular product results
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {searchResults.map((product) => (
